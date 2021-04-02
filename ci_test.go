@@ -713,6 +713,8 @@ func TestGitHubActions(t *testing.T) {
 		"GITHUB_SHA",
 		"GITHUB_REPOSITORY",
 		"GITHUB_RUN_ID",
+		"GITHUB_EVENT_NAME",
+		"GITHUB_EVENT_PATH",
 	}
 	saveEnvs := make(map[string]string)
 	for _, key := range envs {
@@ -741,6 +743,40 @@ func TestGitHubActions(t *testing.T) {
 				PR: PullRequest{
 					Revision: "abcdefg",
 					Number:   0,
+				},
+				URL: "https://github.com/mercari/tfnotify/actions/runs/12345",
+			},
+			ok: true,
+		},
+		{
+			fn: func() {
+				os.Setenv("GITHUB_SHA", "abcdefg")
+				os.Setenv("GITHUB_REPOSITORY", "mercari/tfnotify")
+				os.Setenv("GITHUB_RUN_ID", "12345")
+				os.Setenv("GITHUB_EVENT_NAME", "pull_request")
+				os.Setenv("GITHUB_EVENT_PATH", "fixtures/pull_request_event.json")
+			},
+			ci: CI{
+				PR: PullRequest{
+					Revision: "e6b616cee53d0d0b507509bf7b5544f361b7f47c",
+					Number:   77,
+				},
+				URL: "https://github.com/mercari/tfnotify/actions/runs/12345",
+			},
+			ok: true,
+		},
+		{
+			fn: func() {
+				os.Setenv("GITHUB_SHA", "abcdefg")
+				os.Setenv("GITHUB_REPOSITORY", "mercari/tfnotify")
+				os.Setenv("GITHUB_RUN_ID", "12345")
+				os.Setenv("GITHUB_EVENT_NAME", "pull_request_target")
+				os.Setenv("GITHUB_EVENT_PATH", "fixtures/pull_request_event.json")
+			},
+			ci: CI{
+				PR: PullRequest{
+					Revision: "e6b616cee53d0d0b507509bf7b5544f361b7f47c",
+					Number:   77,
 				},
 				URL: "https://github.com/mercari/tfnotify/actions/runs/12345",
 			},

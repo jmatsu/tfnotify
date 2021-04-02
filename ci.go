@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"encoding/json"
 	"os"
 	"regexp"
 	"strconv"
@@ -18,6 +19,19 @@ type CI struct {
 type PullRequest struct {
 	Revision string
 	Number   int
+}
+
+type pullRequestEvent struct {
+	PR rawPullRequest `json:"pull_request"`
+}
+
+type rawPullRequest struct {
+	Head branch `json:"head"`
+	Number   int `json:"number"`
+}
+
+type branch struct {
+	Sha string `json:"sha"`
 }
 
 func circleci() (ci CI, err error) {
@@ -143,7 +157,24 @@ func githubActions() (ci CI, err error) {
 		os.Getenv("GITHUB_REPOSITORY"),
 		os.Getenv("GITHUB_RUN_ID"),
 	)
-	ci.PR.Revision = os.Getenv("GITHUB_SHA")
+
+	event_name := os.Getenv("GITHUB_EVENT_NAME")
+
+	if event_name == "pull_request" || event_name == "pull_request_target" {
+		var event pullRequestEvent
+
+		if bytes, err := os.ReadFile(os.Getenv("GITHUB_EVENT_PATH")); err != nil {
+			return ci, err
+		} else if err := json.Unmarshal(bytes, &event); err != nil {
+			return ci, err
+		} else {
+			ci.PR.Number = event.PR.Number
+			ci.PR.Revision = event.PR.Head.Sha
+		}
+	} else {
+		ci.PR.Revision = os.Getenv("GITHUB_SHA")
+	}
+
 	return ci, err
 }
 
