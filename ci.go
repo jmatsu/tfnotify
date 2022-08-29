@@ -9,6 +9,15 @@ import (
 	"strings"
 )
 
+const (
+	defaultCloudBuildRegion = "global"
+)
+
+var (
+	// https://help.github.com/en/actions/reference/events-that-trigger-workflows#pull-request-event-pull_request
+	githubActionsPRRefRegexp = regexp.MustCompile(`refs/pull/\d+/merge`)
+)
+
 // CI represents a common information obtained from all CI platforms
 type CI struct {
 	PR  PullRequest
@@ -173,6 +182,7 @@ func githubActions() (ci CI, err error) {
 		}
 	} else {
 		ci.PR.Revision = os.Getenv("GITHUB_SHA")
+    ci.PR.Number = 0
 	}
 
 	return ci, err
@@ -181,8 +191,15 @@ func githubActions() (ci CI, err error) {
 func cloudbuild() (ci CI, err error) {
 	ci.PR.Number = 0
 	ci.PR.Revision = os.Getenv("COMMIT_SHA")
+
+	region := os.Getenv("_REGION")
+	if region == "" {
+		region = defaultCloudBuildRegion
+	}
+
 	ci.URL = fmt.Sprintf(
-		"https://console.cloud.google.com/cloud-build/builds/%s?project=%s",
+		"https://console.cloud.google.com/cloud-build/builds;region=%s/%s?project=%s",
+		region,
 		os.Getenv("BUILD_ID"),
 		os.Getenv("PROJECT_ID"),
 	)
